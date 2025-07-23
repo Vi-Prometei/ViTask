@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  task_db:
+    image: postgres:15
+    container_name: psql
+    restart: always
+    environment:
+      POSTGRES_DB: task_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@vitask.ru
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - task_db
+
+volumes:
+  pgdata:

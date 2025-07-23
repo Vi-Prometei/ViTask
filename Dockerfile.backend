@@ -1,0 +1,1 @@
+# Dockerfile.backendFROM golang:1.24.5WORKDIR /appCOPY . .RUN go mod downloadRUN go build -o main .EXPOSE 3000CMD ["./main"]
