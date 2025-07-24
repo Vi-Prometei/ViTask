@@ -121,6 +121,9 @@ function App() {
                     <Menu.Item key="create" icon={<PlusOutlined/>}>
                         {editingTask ? 'Редактировать задачу' : 'Создание задачи'}
                     </Menu.Item>
+                    <Menu.Item key="completed" icon={<CheckCircleOutlined/>}>
+                        Архив
+                    </Menu.Item>
                 </Menu>
             </Sider>
 
