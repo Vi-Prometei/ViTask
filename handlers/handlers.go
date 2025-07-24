@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"ViTask/database"
-	"ViTask/models"
+	"awesomeProject/database"
+	"awesomeProject/models"
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 )
 
 func CreateTask(c *fiber.Ctx) error {
@@ -33,9 +34,15 @@ func GetTasks(c *fiber.Ctx) error {
 	return c.JSON(tasks)
 }
 func DeleteTask(c *fiber.Ctx) error {
-	id := c.Params("id")
-	var task models.Task
+	idParam := c.Params("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Неверный ID",
+		})
+	}
 
+	var task models.Task
 	db := database.GetDB()
 	if err := db.First(&task, id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

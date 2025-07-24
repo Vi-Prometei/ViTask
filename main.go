@@ -1,9 +1,9 @@
 package main
 
 import (
-	"ViTask/database"
-	"ViTask/handlers"
-	"ViTask/models"
+	"awesomeProject/database"
+	"awesomeProject/handlers"
+	"awesomeProject/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
@@ -17,9 +17,9 @@ func main() {
 	app.Use(cors.New())
 
 	database.Connect()
-	db := database.GetDB()
+	db := database.GetDB()//
 	db.AutoMigrate(&models.Task{})
-	// Для задач
+	
 	app.Post("/api/tasks", handlers.CreateTask)
 	app.Get("/api/tasks", handlers.GetTasks)
 	app.Delete("/api/tasks/:id", handlers.DeleteTask)
