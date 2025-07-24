@@ -8,4 +8,5 @@ type Task struct {
 	Description string    `json:"description"`
 	Deadline    time.Time `json:"deadline"`
 	CreatedAt   time.Time
+	Completed   bool `json:"completed" gorm:"default:false"`
 }
