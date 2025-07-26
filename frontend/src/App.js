@@ -5,6 +5,7 @@ import {
     PlusOutlined,
     CheckCircleOutlined,
     EditOutlined,
+    RollbackOutlined,
     DeleteOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
@@ -67,13 +68,13 @@ function App() {
         }
     };
 
-    const completeTask = async (taskId) => {
+    const completeTask = async (task) => {
         try {
-            await axios.patch(`http://localhost:3000/api/tasks/${taskId}`, {completed: true});
-            message.success('Задача отмечена как выполненная');
+            await axios.patch(`http://localhost:3000/api/tasks/${task.id}`, {completed: !task.completed});
+            message.success(task.completed ? 'Задача возвращена в список' : 'Задача отмечена как выполненная');
             fetchTasks();
         } catch (error) {
-            message.error('Ошибка при завершении задачи');
+            message.error('Ошибка при обновлении задачи');
             console.error(error);
         }
     };
@@ -121,9 +122,7 @@ function App() {
                     <Menu.Item key="create" icon={<PlusOutlined/>}>
                         {editingTask ? 'Редактировать задачу' : 'Создание задачи'}
                     </Menu.Item>
-                    <Menu.Item key="completed" icon={<CheckCircleOutlined/>}>
-                        Архив
-                    </Menu.Item>
+                    <Menu.Item key="completed">Архив</Menu.Item>
                 </Menu>
             </Sider>
 
@@ -133,7 +132,7 @@ function App() {
                         <>
                             <h2>Список задач</h2>
                             <Collapse accordion>
-                                {tasks.map((task) => {
+                                {activeTasks.map((task) => {
                                     const deadline = dayjs(task.deadline);
                                     const created = dayjs(task.createdAt);
                                     const remaining = deadline.diff(dayjs(), 'day');
@@ -159,11 +158,10 @@ function App() {
                                                         <Tooltip title="Выполнить">
                                                             <Button
                                                                 type="text"
-                                                                icon={<CheckCircleOutlined
-                                                                    style={{fontSize: 20, color: 'green'}}/>}
+                                                                icon={<CheckCircleOutlined style={{fontSize: 20, color: 'green'}}/>}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    completeTask(task.id);
+                                                                    completeTask(task);
                                                                 }}
                                                             />
                                                         </Tooltip>
@@ -235,16 +233,17 @@ function App() {
                                                         </div>
                                                     </div>
                                                     <Space>
-                                                        <Tooltip title="Редактировать">
+                                                        <Tooltip title="Вернуть">
                                                             <Button
                                                                 type="text"
-                                                                icon={<EditOutlined style={{fontSize: 20}}/>}
+                                                                icon={<RollbackOutlined style={{fontSize: 20, color: 'orange'}}/>}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    editTask(task);
+                                                                    completeTask(task);
                                                                 }}
                                                             />
                                                         </Tooltip>
+
                                                         <Popconfirm
                                                             title="Удалить задачу?"
                                                             onConfirm={() => handleDelete(task.id)}

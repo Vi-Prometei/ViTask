@@ -10,7 +10,6 @@ import (
 
 func main() {
 	app := fiber.New()
-	// ✅ Разрешаем запросы с других источников (например, от React фронтенда)
 	app.Use(cors.New())
 
 	database.Connect()

@@ -26,5 +26,33 @@ services:
     depends_on:
       - task_db
 
+#  backend:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.backend
+#    container_name: vitask-backend
+#    restart: always
+#    environment:
+#      DB_HOST: task_db
+#      DB_USER: admin
+#      DB_PASSWORD: admin
+#      DB_NAME: task_db
+#      DB_PORT: 5432
+#    ports:
+#      - "3000:3000"
+#    depends_on:
+#      - task_db
+#
+#  frontend:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.frontend
+#    container_name: vitask-frontend
+#    restart: always
+#    ports:
+#      - "3001:3000"
+#    depends_on:
+#      - backend
+
 volumes:
   pgdata:
