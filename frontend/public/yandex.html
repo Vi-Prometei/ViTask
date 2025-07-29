@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Yandex OAuth Callback</title>
+    <script>
+        // 1. Забираем токен из hash
+        function getTokenFromHash() {
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1);
+                const params = Object.fromEntries(new URLSearchParams(hash));
+                if (params.access_token) {
+                    localStorage.setItem('ya_disk_token', params.access_token);
+                }
+            }
+        }
+        getTokenFromHash();
+        // 2. Перенаправляем обратно в SPA (на главную)
+        window.location.href = '/';
+    </script>
+</head>
+<body>
+<p>Авторизация через Яндекс... Возвращаемся в приложение.</p>
+</body>
+</html>
