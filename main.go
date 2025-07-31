@@ -4,6 +4,7 @@ import (
 	"awesomeProject/database"
 	"awesomeProject/handlers"
 	"awesomeProject/models"
+	"awesomeProject/yandex"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
@@ -26,6 +27,9 @@ func main() {
 	app.Post("/api/users/login", handlers.Login)
 	app.Get("/api/me", handlers.GetMe)
 
-	//app.Post("/api/tasks/Logout", handlers.LogoutUser)
+	app.Get("/api/disk/files", yandex.GetDiskFiles)
+	app.Post("/api/disk/upload", yandex.UploadDiskFile)
+	app.Get("/api/disk/download", yandex.DownloadDiskFile)
+
 	app.Listen(":3000")
 }

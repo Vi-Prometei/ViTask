@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Yandex OAuth Callback</title>
     <script>
-        // 1. Забираем токен из hash
         function getTokenFromHash() {
             if (window.location.hash) {
                 const hash = window.location.hash.substring(1);
@@ -15,11 +14,10 @@
             }
         }
         getTokenFromHash();
-        // 2. Перенаправляем обратно в SPA (на главную)
         window.location.href = '/';
     </script>
 </head>
 <body>
-<p>Авторизация через Яндекс... Возвращаемся в приложение.</p>
+<p>Авторизация через Яндекс...</p>
 </body>
 </html>

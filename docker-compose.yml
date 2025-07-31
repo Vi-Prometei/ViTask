@@ -14,17 +14,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@vitask.ru
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - task_db
+    #pgadmin:
+    #mage: dpage/pgadmin4
+    #ontainer_name: pgadmin
+    #estart: always
+    #nvironment:
+    # PGADMIN_DEFAULT_EMAIL: admin@vitask.ru
+    # PGADMIN_DEFAULT_PASSWORD: admin
+    #orts:
+    # - "5050:80"
+    #epends_on:
+    # - task_db
 
 #  backend:
 #    build:
