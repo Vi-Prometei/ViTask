@@ -8,14 +8,12 @@ import {
 import YandexLogin from './pages/YandexLogin';
 import YandexDiskApp from './pages/YandexDiskApp';
 
-
 import axios from 'axios';
 import dayjs from 'dayjs';
 
 const {Sider, Content} = Layout;
 const {TextArea} = Input;
 const {Panel} = Collapse;
-
 
 export default function App() {
     // --- User State ---
@@ -24,7 +22,6 @@ export default function App() {
         return u ? JSON.parse(u) : null;
     });
     const [showRegister, setShowRegister] = useState(false);
-
 
     // --- Tasks State ---
     const [form] = Form.useForm();
@@ -35,16 +32,15 @@ export default function App() {
 
     const activeTasks = tasks.filter((t) => !t.completed);
     const completedTasks = tasks.filter((t) => t.completed);
-//Yandex
+
+    // Yandex
     const [yaToken, setYaToken] = useState(localStorage.getItem('ya_disk_token') || null);
-
-
 
     // --- Fetch tasks ---
     const fetchTasks = async () => {
         if (!user) return;
         try {
-            const response = await axios.get('http://localhost:3000/api/tasks', {
+            const response = await axios.get('/api/tasks', {
                 headers: {'X-User-ID': user.id}
             });
             setTasks(response.data);
@@ -68,7 +64,7 @@ export default function App() {
     const onLogin = async (values) => {
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:3000/api/users/login', {
+            const res = await axios.post('/api/users/login', {
                 login: values.login, password: values.password
             });
             message.success('Вход выполнен!');
@@ -84,7 +80,7 @@ export default function App() {
     const onRegister = async (values) => {
         setLoading(true);
         try {
-            await axios.post('http://localhost:3000/api/users/register', {
+            await axios.post('/api/users/register', {
                 login: values.login,
                 password: values.password,
                 first_name: values.firstName,
@@ -106,12 +102,12 @@ export default function App() {
             const deadline = values.deadline.toISOString();
             const payload = {title: values.title, description: values.description, deadline};
             if (editingTask) {
-                await axios.put(`http://localhost:3000/api/tasks/${editingTask.id}`, payload, {
+                await axios.put(`/api/tasks/${editingTask.id}`, payload, {
                     headers: {'X-User-ID': user.id}
                 });
                 message.success('Задача успешно обновлена!');
             } else {
-                await axios.post('http://localhost:3000/api/tasks', payload, {
+                await axios.post('/api/tasks', payload, {
                     headers: {'X-User-ID': user.id}
                 });
                 message.success('Задача успешно создана!');
@@ -130,7 +126,7 @@ export default function App() {
 
     const completeTask = async (task) => {
         try {
-            await axios.patch(`http://localhost:3000/api/tasks/${task.id}`, {completed: !task.completed}, {
+            await axios.patch(`/api/tasks/${task.id}`, {completed: !task.completed}, {
                 headers: {'X-User-ID': user.id}
             });
             message.success(task.completed ? 'Задача возвращена в список' : 'Задача отмечена как выполненная');
@@ -152,7 +148,7 @@ export default function App() {
 
     const handleDelete = async (taskId) => {
         try {
-            await axios.delete(`http://localhost:3000/api/tasks/${taskId}`, {
+            await axios.delete(`/api/tasks/${taskId}`, {
                 headers: {'X-User-ID': user.id}
             });
             message.success('Задача удалена');

@@ -15,7 +15,7 @@ export default function YandexDiskApp({ yaToken, onLogout }) {
             if (!yaToken) return;
             setLoading(true);
             try {
-                let url = 'http://localhost:3000/api/disk/files';
+                let url = '/api/disk/files';
                 const params = {};
                 if (query.length >= 3) params.q = query;
                 const res = await axios.get(url, {
@@ -34,7 +34,7 @@ export default function YandexDiskApp({ yaToken, onLogout }) {
     useEffect(() => {
         if (!yaToken) return;
         setLoading(true);
-        axios.get('http://localhost:3000/api/disk/files', {
+        axios.get('/api/disk/files', {
             headers: { 'Authorization': `Bearer ${yaToken}` }
         }).then(res => setFiles(res.data.files || []))
             .catch(() => setFiles([]))
@@ -42,13 +42,13 @@ export default function YandexDiskApp({ yaToken, onLogout }) {
     }, [yaToken]);
 
     const download = (file) => {
-        window.open(`http://localhost:3000/api/disk/download?path=${encodeURIComponent(file.path)}`, '_blank');
+        window.open(`/api/disk/download?path=${encodeURIComponent(file.path)}`, '_blank');
     };
 
     const previewFile = async (file) => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:3000/api/disk/file', {
+            const res = await axios.get('/api/disk/file', {
                 params: { path: file.path },
                 headers: { 'Authorization': `Bearer ${yaToken}` }
             });
