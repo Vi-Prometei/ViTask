@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, Button } from 'antd';
 
-const YANDEX_CLIENT_ID = '92dd4faf1d34461aa182dc507f3d6b66';
-const YANDEX_REDIRECT = 'http://127.0.0.1:3000/yandex.html';
+const YANDEX_CLIENT_ID = '3ea8618d3802468e9756114029ae185f';
+const YANDEX_REDIRECT = 'http://127.0.0.1:8080/yandex.html';
 export default function YandexLogin() {
     const handleLogin = () => {
         window.location.href =
