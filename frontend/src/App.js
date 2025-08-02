@@ -1,18 +1,21 @@
 import React, {useState, useEffect} from 'react';
-import {Layout, Menu, Form, Input, DatePicker, Button, message, Collapse, Space, Tooltip, Popconfirm, Card} from 'antd';
+import {Layout, Form, Input, Button, message, Collapse, Space, Tooltip, Popconfirm, Card} from 'antd';
 import {
-    UnorderedListOutlined, PlusOutlined, CheckCircleOutlined,
-    EditOutlined, RollbackOutlined, DeleteOutlined, UserOutlined
+    RollbackOutlined, DeleteOutlined
 } from '@ant-design/icons';
 
 import YandexLogin from './pages/YandexLogin';
 import YandexDiskApp from './pages/YandexDiskApp';
+import TaskForm from './pages/TaskForm';
+import TaskList from './pages/TaskList';
+import UserInfo from './pages/UserInfo';
+import Sidebar from './pages/Sidebar';
+
 
 import axios from 'axios';
 import dayjs from 'dayjs';
 
-const {Sider, Content} = Layout;
-const {TextArea} = Input;
+const {Content} = Layout;
 const {Panel} = Collapse;
 
 export default function App() {
@@ -209,114 +212,33 @@ export default function App() {
 
     return (
         <Layout style={{minHeight: '100vh'}}>
-            <Sider width={200} style={{background: '#fff'}}>
-                <Menu
-                    mode="inline"
-                    selectedKeys={[activeTab]}
-                    onClick={(e) => {
-                        setActiveTab(e.key);
-                        if (e.key === 'list') {
-                            setEditingTask(null);
-                            form.resetFields();
-                        }
-                    }}
-                    style={{height: '100%', borderRight: 0}}
-                >
-                    <Menu.Item key="list" icon={<UnorderedListOutlined/>}>
-                        Задачи
-                    </Menu.Item>
-                    <Menu.Item key="create" icon={<PlusOutlined/>}>
-                        {editingTask ? 'Редактировать задачу' : 'Создание задачи'}
-                    </Menu.Item>
-                    <Menu.Item key="completed" icon={<CheckCircleOutlined/>}>Архив</Menu.Item>
-                    <Menu.Item key="disk" icon={<UserOutlined />}>Яндекс.Диск</Menu.Item>
-                </Menu>
-            </Sider>
+            <Sidebar
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                setEditingTask={setEditingTask}
+                form={form}
+            />
+
             <Layout style={{padding: '24px'}}>
                 <Content style={{background: '#fff', padding: 24, minHeight: 280}}>
+
                     {/* User Info */}
-                    <div style={{display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 16}}>
-                        <UserOutlined style={{fontSize: 22, marginRight: 8}}/>
-                        <span style={{marginRight: 8}}>
-                            Вы вошли как: <b>{user.first_name} {user.last_name}</b> ({user.login})
-                        </span>
-                        <Button type="link" danger onClick={handleLogout}>Выйти</Button>
-                    </div>
+                    <UserInfo user={user} onLogout={handleLogout}/>
+
 
                     {activeTab === 'list' && (
                         <>
                             <h2>Список задач</h2>
-                            <Collapse accordion>
-                                {activeTasks.map((task) => {
-                                    const deadline = dayjs(task.deadline);
-                                    const created = dayjs(task.createdAt);
-                                    const remaining = deadline.diff(dayjs(), 'day');
-                                    return (
-                                        <Panel
-                                            key={task.id}
-                                            header={
-                                                <div style={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <div>
-                                                        <strong>{task.title} (#{task.id})</strong>
-                                                        <div style={{fontSize: 12, color: 'gray'}}>
-                                                            Создано: {created.format('DD.MM.YYYY HH:mm')}<br/>
-                                                            Дедлайн: {deadline.format('DD.MM.YYYY HH:mm')}<br/>
-                                                            Осталось: {remaining >= 0 ? `${remaining} дн.` : 'Просрочено'}
-                                                        </div>
-                                                    </div>
-                                                    <Space>
-                                                        <Tooltip title="Выполнить">
-                                                            <Button
-                                                                type="text"
-                                                                icon={<CheckCircleOutlined
-                                                                    style={{fontSize: 20, color: 'green'}}/>}
-                                                                onClick={e => {
-                                                                    e.stopPropagation();
-                                                                    completeTask(task);
-                                                                }}
-                                                            />
-                                                        </Tooltip>
-                                                        <Tooltip title="Редактировать">
-                                                            <Button
-                                                                type="text"
-                                                                icon={<EditOutlined style={{fontSize: 20}}/>}
-                                                                onClick={e => {
-                                                                    e.stopPropagation();
-                                                                    editTask(task);
-                                                                }}
-                                                            />
-                                                        </Tooltip>
-                                                        <Popconfirm
-                                                            title="Удалить задачу?"
-                                                            onConfirm={() => handleDelete(task.id)}
-                                                            okText="Да"
-                                                            cancelText="Нет"
-                                                        >
-                                                            <Tooltip title="Удалить">
-                                                                <Button type="text" danger icon={<DeleteOutlined
-                                                                    style={{fontSize: 20}}/>}/>
-                                                            </Tooltip>
-                                                        </Popconfirm>
-                                                    </Space>
-                                                </div>
-                                            }
-                                        >
-                                            <p><strong>Описание:</strong><br/>{task.description}</p>
-                                            <p><strong>Создано:</strong> {created.format('DD.MM.YYYY HH:mm')}</p>
-                                            <p><strong>Дедлайн:</strong> {deadline.format('DD.MM.YYYY HH:mm')}</p>
-                                            <p>
-                                                <strong>Осталось:</strong> {remaining >= 0 ? `${remaining} дней` : 'Просрочено'}
-                                            </p>
-                                        </Panel>
-                                    );
-                                })}
-                            </Collapse>
+                            <TaskList
+                                tasks={activeTasks}
+                                onComplete={completeTask}
+                                onEdit={editTask}
+                                onDelete={handleDelete}
+                                completed={false}
+                            />
                         </>
                     )}
+
                     {activeTab === 'completed' && (
                         <>
                             <h2>Выполненные задачи</h2>
@@ -339,7 +261,7 @@ export default function App() {
                                                         <div style={{fontSize: 12, color: 'gray'}}>
                                                             Создано: {created.format('DD.MM.YYYY HH:mm')}<br/>
                                                             Дедлайн: {deadline.format('DD.MM.YYYY HH:mm')}<br/>
-                                                            Осталось: {remaining >= 0 ? `${remaining} дн.` : 'Просрочено'}
+                                                            Осталось: {remaining >= 0 ? `${remaining} дн.` : 'Потрачено'}
                                                         </div>
                                                     </div>
                                                     <Space>
@@ -384,49 +306,25 @@ export default function App() {
                     {activeTab === 'create' && (
                         <>
                             <h2>{editingTask ? 'Редактирование задачи' : 'Создание задачи'}</h2>
-                            <Form
+                            <TaskForm
                                 form={form}
-                                layout="vertical"
                                 onFinish={onFinish}
-                                initialValues={{title: '', description: ''}}
-                            >
-                                <Form.Item name="title" label="Название задачи"
-                                           rules={[{required: true, message: 'Введите название'}]}>
-                                    <Input placeholder="Название"/>
-                                </Form.Item>
-                                <Form.Item name="description" label="Описание задачи"
-                                           rules={[{required: true, message: 'Введите описание'}]}>
-                                    <TextArea rows={4} placeholder="Описание"/>
-                                </Form.Item>
-                                <Form.Item name="deadline" label="Дедлайн"
-                                           rules={[{required: true, message: 'Выберите дату'}]}>
-                                    <DatePicker showTime format="DD.MM.YYYY HH:mm"/>
-                                </Form.Item>
-                                <Form.Item>
-                                    <Button type="primary" htmlType="submit" loading={loading}>
-                                        {editingTask ? 'Обновить задачу' : 'Создать задачу'}
-                                    </Button>
-                                    {editingTask && (
-                                        <Button
-                                            style={{marginLeft: 8}}
-                                            onClick={() => {
-                                                setEditingTask(null);
-                                                form.resetFields();
-                                                setActiveTab('list');
-                                            }}
-                                        >
-                                            Отмена
-                                        </Button>
-                                    )}
-                                </Form.Item>
-                            </Form>
+                                editingTask={editingTask}
+                                loading={loading}
+                                onCancel={() => {
+                                    setEditingTask(null);
+                                    form.resetFields();
+                                    setActiveTab('list');
+                                }}
+                            />
                         </>
                     )}
+
                     {/* Вкладка Яндекс.Диск */}
                     {activeTab === 'disk' && (
                         yaToken
-                            ? <YandexDiskApp yaToken={yaToken} onLogout={() => setYaToken(null)} />
-                            : <YandexLogin setYandexToken={setYaToken} />
+                            ? <YandexDiskApp yaToken={yaToken} onLogout={() => setYaToken(null)}/>
+                            : <YandexLogin setYandexToken={setYaToken}/>
                     )}
 
                 </Content>

@@ -11,6 +11,7 @@
     "antd": "^5.26.6",
     "axios": "^1.11.0",
     "dayjs": "^1.11.13",
+    "framer-motion": "^12.23.12",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
