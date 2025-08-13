@@ -2,6 +2,7 @@ package yandex
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Получить OAuth токен из заголовка Authorization: Bearer {token}
 func GetUserToken(c *fiber.Ctx) (string, error) {
 	auth := c.Get("Authorization")
 	if !strings.HasPrefix(auth, "Bearer ") {
@@ -18,7 +18,6 @@ func GetUserToken(c *fiber.Ctx) (string, error) {
 	return strings.TrimPrefix(auth, "Bearer "), nil
 }
 
-// Рекурсивно обходит все файлы на Диске пользователя
 func WalkYandexDisk(path, token string, allFiles *[]map[string]string) error {
 	apiUrl := "https://cloud-api.yandex.net/v1/disk/resources?path=" + path + "&limit=1000"
 	req, _ := http.NewRequest("GET", apiUrl, nil)
@@ -26,12 +25,15 @@ func WalkYandexDisk(path, token string, allFiles *[]map[string]string) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Println("Ошибка при запросе к Яндекс.Диску:", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return fiber.NewError(resp.StatusCode, "Ошибка API Яндекс.Диска")
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		fmt.Printf("Ошибка API Яндекс.Диска: %d, ответ: %s\n", resp.StatusCode, string(bodyBytes))
+		return fiber.NewError(resp.StatusCode, "Ошибка API Яндекс.Диска: "+string(bodyBytes))
 	}
 
 	var result struct {
@@ -45,7 +47,10 @@ func WalkYandexDisk(path, token string, allFiles *[]map[string]string) error {
 		} `json:"_embedded"`
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
-	json.Unmarshal(body, &result)
+	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Println("Ошибка при разборе JSON:", err, string(body))
+		return err
+	}
 
 	for _, item := range result.Embedded.Items {
 		if item.Type == "dir" {
@@ -65,12 +70,14 @@ func WalkYandexDisk(path, token string, allFiles *[]map[string]string) error {
 func GetDiskFiles(c *fiber.Ctx) error {
 	token, err := GetUserToken(c)
 	if err != nil {
+		fmt.Println("Ошибка токена:", err) // <-- Выводим ошибку токена в консоль
 		return err
 	}
 	query := strings.ToLower(c.Query("q"))
 
 	var files []map[string]string
 	if err := WalkYandexDisk("disk:/", token, &files); err != nil {
+		fmt.Println("Ошибка обхода диска:", err) // <-- Выводим ошибку обхода диска
 		return c.Status(500).JSON(fiber.Map{"error": "Ошибка при обходе диска"})
 	}
 

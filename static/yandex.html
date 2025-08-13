@@ -1,23 +1,19 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Yandex OAuth Callback</title>
-    <script>
-        function getTokenFromHash() {
-            if (window.location.hash) {
-                const hash = window.location.hash.substring(1);
-                const params = Object.fromEntries(new URLSearchParams(hash));
-                if (params.access_token) {
-                    localStorage.setItem('ya_disk_token', params.access_token);
-                }
+<script>
+    function getTokenFromHash() {
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1);
+            const params = Object.fromEntries(new URLSearchParams(hash));
+            if (params.access_token) {
+                localStorage.setItem('ya_disk_token', params.access_token);
+                window.location.href = '/';
+            } else if (params.error) {
+                document.body.innerText = 'Ошибка авторизации: ' + params.error;
+            } else {
+                document.body.innerText = 'Не удалось получить access_token!';
             }
+        } else {
+            document.body.innerText = 'Не найден hash в URL';
         }
-        getTokenFromHash();
-        window.location.href = '/';
-    </script>
-</head>
-<body>
-<p>Авторизация через Яндекс...</p>
-</body>
-</html>
+    }
+    getTokenFromHash();
+</script>

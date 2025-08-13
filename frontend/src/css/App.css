@@ -1,0 +1,15 @@
+.glow-text {
+    display: inline-block;
+    font-weight: bold;
+    color: #ff9900; /* базовый оранжевый */
+    animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 5px #ff9900, 0 0 10px #ff7700, 0 0 15px #ff5500;
+    }
+    to {
+        text-shadow: 0 0 15px #ffaa33, 0 0 25px #ff8800, 0 0 35px #ff6600;
+    }
+}

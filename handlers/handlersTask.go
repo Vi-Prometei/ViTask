@@ -3,27 +3,31 @@ package handlers
 import (
 	"awesomeProject/database"
 	"awesomeProject/models"
+	"awesomeProject/repositories"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
 
-func CreateTask(c *fiber.Ctx) error {
-	var task models.Task
+func MakeCreateTaskHandler(repo *repositories.TaskRepo) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var task models.Task
 
-	if err := c.BodyParser(&task); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Неверный формат данных",
-		})
+		if err := c.BodyParser(&task); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Неверный формат данных",
+			})
+		}
+
+		if err := repo.Create(c.UserContext(), &task); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Ошибка при создании задачи",
+			})
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(task)
 	}
-
-	if err := database.GetDB().Create(&task).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Ошибка при создании задачи",
-		})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(task)
 }
+
 func GetTasks(c *fiber.Ctx) error {
 	var tasks []models.Task
 	if err := database.GetDB().Find(&tasks).Error; err != nil {
