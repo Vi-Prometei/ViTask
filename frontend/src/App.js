@@ -16,7 +16,7 @@ import './App.css';
 import QuestManager from "./pages/QuestManager"; // подключаем стили с glow-text
 
 const { Content } = Layout;
-const { Panel } = Collapse;
+
 
 export default function App() {
     const [user, setUser] = useState(() => {
@@ -249,60 +249,73 @@ export default function App() {
                     {activeTab === 'completed' && (
                         <>
                             <h2>Выполненные задачи</h2>
-                            {(() => {
-                                const collapseItems = completedTasks.map((task) => {
+
+                            <Collapse
+                                accordion
+                                items={completedTasks.map((task) => {
                                     const deadline = dayjs(task.deadline);
                                     const created = dayjs(task.createdAt);
                                     const remaining = deadline.diff(dayjs(), 'day');
 
-                                    const header = (
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div>
-                                                <strong>{task.title} (#{task.id})</strong>
-                                                <div style={{ fontSize: 12, color: 'gray' }}>
-                                                    Создано: {created.format('DD.MM.YYYY HH:mm')}<br />
-                                                    Дедлайн: {deadline.format('DD.MM.YYYY HH:mm')}<br />
-                                                    Осталось: {remaining >= 0 ? `${remaining} дн.` : 'Потрачено'}
-                                                </div>
+                                    const headerLeft = (
+                                        <div>
+                                            <strong>{task.title} (#{task.id})</strong>
+                                            <div style={{fontSize: 12, color: 'gray'}}>
+                                                Создано: {created.format('DD.MM.YYYY HH:mm')}<br/>
+                                                Дедлайн: {deadline.format('DD.MM.YYYY HH:mm')}<br/>
+                                                Осталось: {remaining >= 0 ? `${remaining} дн.` : 'Просрочено'}
                                             </div>
-                                            <Space onClick={(e) => e.stopPropagation()}>
-                                                <Tooltip title="Вернуть">
-                                                    <Button
-                                                        type="text"
-                                                        icon={<RollbackOutlined style={{ fontSize: 20, color: 'orange' }} />}
-                                                        onClick={() => completeTask(task)}
-                                                    />
-                                                </Tooltip>
-                                                <Popconfirm
-                                                    title="Удалить задачу?"
-                                                    onConfirm={() => handleDelete(task.id)}
-                                                    okText="Да"
-                                                    cancelText="Нет"
-                                                >
-                                                    <Tooltip title="Удалить">
-                                                        <Button type="text" danger icon={<DeleteOutlined style={{ fontSize: 20 }} />} />
-                                                    </Tooltip>
-                                                </Popconfirm>
-                                            </Space>
                                         </div>
+                                    );
+
+                                    const headerRight = (
+                                        <Space onClick={(e) => e.stopPropagation()}>
+                                            <Tooltip title="Вернуть">
+                                                <Button
+                                                    type="text"
+                                                    icon={<RollbackOutlined style={{fontSize: 20, color: 'orange'}}/>}
+                                                    onClick={() => completeTask(task)} // вернёт задачу в активные
+                                                />
+                                            </Tooltip>
+                                            <Popconfirm
+                                                title="Удалить задачу?"
+                                                onConfirm={() => handleDelete(task.id)}
+                                                okText="Да"
+                                                cancelText="Нет"
+                                            >
+                                                <Tooltip title="Удалить">
+                                                    <Button type="text" danger
+                                                            icon={<DeleteOutlined style={{fontSize: 20}}/>}/>
+                                                </Tooltip>
+                                            </Popconfirm>
+                                        </Space>
                                     );
 
                                     return {
                                         key: String(task.id),
-                                        label: header,
+                                        label: (
+                                            <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center'
+                                            }}>
+                                                {headerLeft}
+                                            </div>
+                                        ),
+                                        extra: headerRight,
                                         children: (
                                             <>
-                                                <p><strong>Описание:</strong><br />{task.description}</p>
+                                                <p><strong>Описание:</strong><br/>{task.description}</p>
                                                 <p><strong>Создано:</strong> {created.format('DD.MM.YYYY HH:mm')}</p>
                                                 <p><strong>Дедлайн:</strong> {deadline.format('DD.MM.YYYY HH:mm')}</p>
-                                                <p><strong>Осталось:</strong> {remaining >= 0 ? `${remaining} дней` : 'Просрочено'}</p>
+                                                <p>
+                                                    <strong>Осталось:</strong> {remaining >= 0 ? `${remaining} дней` : 'Просрочено'}
+                                                </p>
                                             </>
                                         ),
                                     };
-                                });
-
-                                return <Collapse accordion items={collapseItems} />;
-                            })()}
+                                })}
+                            />
                         </>
                     )}
 
@@ -326,12 +339,12 @@ export default function App() {
 
                     {activeTab === 'disk' && (
                         yaToken
-                            ? <YandexDiskApp yaToken={yaToken} onLogout={() => setYaToken(null)} />
-                            : <YandexLogin setYandexToken={setYaToken} />
+                            ? <YandexDiskApp yaToken={yaToken} onLogout={() => setYaToken(null)}/>
+                            : <YandexLogin setYandexToken={setYaToken}/>
                     )}
 
                     {activeTab === 'quest' && (
-                        <QuestManager />
+                        <QuestManager/>
                     )}
 
                 </Content>

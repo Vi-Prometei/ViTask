@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Form,
     Input,
@@ -18,28 +18,71 @@ import {
     Row,
     Col,
     Tooltip,
+    Segmented,
+    Flex,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, CheckCircleTwoTone, CloseCircleTwoTone, EyeOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import {
+    PlusOutlined,
+    DeleteOutlined,
+    CheckCircleTwoTone,
+    CloseCircleTwoTone,
+} from '@ant-design/icons';
+import api from '../api';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
+
+
+function OptionEditorCompact({ namePath, placeholder }) {
+    return (
+        <Form.Item
+            name={namePath}
+            style={{ marginBottom: 0 }}
+            rules={[
+                { required: true, message: 'Заполните строку' },
+                { min: 1, message: 'Минимум 1 символ' },
+                { max: 300, message: 'Максимум 300 символов' },
+                {
+                    validator: (_, v) =>
+                        (v ?? '').trim().length === 0
+                            ? Promise.reject(new Error('Пустые строки не допускаются'))
+                            : Promise.resolve(),
+                },
+            ]}
+        >
+            <TextArea
+                placeholder={placeholder}
+                rows={3}
+                showCount
+                maxLength={300}
+                allowClear
+            />
+        </Form.Item>
+    );
+}
+
 
 export default function QuestManager() {
     const [questions, setQuestions] = useState([]);
     const [loadingList, setLoadingList] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
+
+    // режим теста
     const [quizIndex, setQuizIndex] = useState(0);
     const [quizChoice, setQuizChoice] = useState(null);
     const [quizChecked, setQuizChecked] = useState(false);
-    const [revealCorrect, setRevealCorrect] = useState(false);
     const [score, setScore] = useState(0);
+
+    // режим представления: «карточки» vs «список»
+    const [viewMode, setViewMode] = useState('list');
+
     const [form] = Form.useForm();
 
+    /* ======= API ======= */
     const fetchQuestions = async () => {
         setLoadingList(true);
         try {
-            const res = await axios.get('/api/quest');
+            const res = await api.get('/api/quest');
             setQuestions(Array.isArray(res.data) ? res.data : []);
         } catch {
             message.error('Не удалось загрузить вопросы');
@@ -48,37 +91,31 @@ export default function QuestManager() {
         }
     };
 
-    useEffect(() => {
-        fetchQuestions();
-    }, []);
+    useEffect(() => { fetchQuestions(); }, []);
 
-    // ---------- Создание вопроса ----------
     useEffect(() => {
-        if (!form.getFieldValue('options')) {
-            form.setFieldsValue({ options: ['', ''], correct_index: undefined });
-        }
+        // первичная инициализация, фиксируем предсказуемую высоту элементов
+        form.setFieldsValue({ question: '', image_url: '', options: ['', ''], correct_index: undefined });
     }, [form]);
 
+    /* ======= Создание ======= */
     const onFinish = async (values) => {
         try {
             setCreateLoading(true);
 
-            const options = values.options || [];
+            const raw = values.options || [];
+            const options = raw.map((x) => (x ?? '').trim());
             if (options.length < 2) {
                 message.error('Нужно минимум 2 варианта ответа');
                 return;
             }
-            for (let i = 0; i < options.length; i++) {
-                const v = (options[i] ?? '').trim();
-                if (!v) {
-                    message.error(`Вариант №${i + 1} пустой`);
-                    return;
-                }
-                options[i] = v;
+            if (options.some((v) => v.length === 0)) {
+                message.error('Пустые варианты не допускаются');
+                return;
             }
 
-            const correctIdx = values.correct_index;
-            if (typeof correctIdx !== 'number' || correctIdx < 0 || correctIdx >= options.length) {
+            const correctIdx = Number(values.correct_index);
+            if (Number.isNaN(correctIdx) || correctIdx < 0 || correctIdx >= options.length) {
                 message.error('Отметьте правильный вариант');
                 return;
             }
@@ -87,13 +124,13 @@ export default function QuestManager() {
                 question: (values.question || '').trim(),
                 image_url: (values.image_url || '').trim(),
                 options,
-                correct_answer: correctIdx, // 0-based
+                correct_answer: correctIdx,
             };
 
-            await axios.post('/api/quest', payload);
+            await api.post('/api/quest', payload);
             message.success('Вопрос создан');
             form.resetFields();
-            form.setFieldsValue({ options: ['', ''], correct_index: undefined });
+            form.setFieldsValue({ question: '', image_url: '', options: ['', ''], correct_index: undefined });
             fetchQuestions();
         } catch {
             message.error('Ошибка при создании вопроса');
@@ -109,7 +146,7 @@ export default function QuestManager() {
 
     const deleteQuestion = async (id) => {
         try {
-            await axios.delete(`/api/quest/${id}`);
+            await api.delete(`/api/quest/${id}`);
             message.success('Вопрос удалён');
             fetchQuestions();
         } catch {
@@ -117,7 +154,7 @@ export default function QuestManager() {
         }
     };
 
-    // ---------- Пройти тест ----------
+    /* ======= Тест ======= */
     const currentQuestion = useMemo(() => questions[quizIndex], [questions, quizIndex]);
     const total = questions.length;
     const progress = total ? Math.round((quizIndex / total) * 100) : 0;
@@ -128,7 +165,6 @@ export default function QuestManager() {
             return;
         }
         setQuizChecked(true);
-        setRevealCorrect(false);
         if (quizChoice === currentQuestion?.correct_answer) {
             setScore((s) => s + 1);
         }
@@ -137,64 +173,84 @@ export default function QuestManager() {
     const onNextQuestion = () => {
         setQuizChoice(null);
         setQuizChecked(false);
-        setRevealCorrect(false);
         if (quizIndex + 1 < questions.length) {
             setQuizIndex((i) => i + 1);
         } else {
-            message.success(`Тест завершён. Ваш результат: ${score}/${questions.length}`);
+            message.success(`Тест завершён. Ваш результат: ${score + (quizChecked && quizChoice === currentQuestion?.correct_answer ? 1 : 0)}/${questions.length}`);
             setQuizIndex(0);
             setScore(0);
         }
     };
 
-    // ---------- UI helpers ----------
+    /* ======= Стили/хелперы ======= */
     const shellCardStyle = {
         borderRadius: 16,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
-        border: '1px solid rgba(5,5,5,0.06)',
+        boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
+        border: '1px solid rgba(5,5,5,0.04)',
+        marginBottom: 16,
     };
 
     const headerStyle = {
-        background: 'linear-gradient(135deg, #f0f5ff, #fff)',
+        background: 'linear-gradient(135deg, #f6f9ff, #ffffff)',
         borderRadius: 16,
-        padding: '12px 16px',
+        padding: '14px 16px',
         marginBottom: 16,
+        border: '1px solid rgba(5,5,5,0.04)',
     };
 
     const optionCard = (borderColor) => ({
         borderRadius: 12,
-        borderColor,
-        transition: 'border-color 0.2s ease',
+        border: borderColor ? `1px solid ${borderColor}` : '1px solid rgba(5,5,5,0.08)',
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
     });
 
-    // ---------- Содержимое вкладок ----------
+    /* ======= Вкладка: Управление ======= */
     const ManageTab = (
         <>
-            <Card style={shellCardStyle} styles={{ body: { paddingTop: 8 } }}>
-                <Title level={4} style={{ marginTop: 0 }}>Создать вопрос</Title>
+            <Card style={shellCardStyle} bodyStyle={{ paddingTop: 8 }}>
+                <Flex align="center" justify="space-between" style={{ marginBottom: 8 }}>
+                    <div>
+                        <Title level={4} style={{ margin: 0 }}>Создать вопрос</Title>
+                        <Text type="secondary">Добавьте текст, варианты и отметьте правильный</Text>
+                    </div>
+                    <Segmented
+                        size="middle"
+                        value={viewMode}
+                        onChange={setViewMode}
+                        options={[
+                            { label: 'Список', value: 'list' },
+                            { label: 'Карточки', value: 'cards' },
+                        ]}
+                    />
+                </Flex>
+
                 <Form
                     layout="vertical"
                     form={form}
-                    initialValues={{ options: ['', ''], correct_index: undefined }}
+                    initialValues={{ options: ['', ''], correct_index: undefined, question: '', image_url: '' }}
                     onFinish={onFinish}
                     onFinishFailed={onFinishFailed}
                 >
                     <Form.Item
                         name="question"
                         label="Вопрос"
-                        rules={[{ required: true, message: 'Введите текст вопроса' }]}
+                        rules={[
+                            { required: true, message: 'Введите текст вопроса' },
+                            { min: 10, message: 'Минимум 10 символов' },
+                            { max: 500, message: 'Максимум 500 символов' },
+                        ]}
                     >
                         <TextArea
                             placeholder="Например: Какой порт по умолчанию у PostgreSQL?"
-                            autoSize={{ minRows: 2, maxRows: 6 }}
+                            rows={3}
                             showCount
                             maxLength={500}
                             allowClear
                         />
                     </Form.Item>
 
-                    <Form.Item name="image_url" label="URL изображения (опционально)">
-                        <Input placeholder="https://example.com/image.png" allowClear />
+                    <Form.Item name="image_url" label="URL изображения">
+                        <Input placeholder="Ссылка на изображение" allowClear />
                     </Form.Item>
 
                     <Form.Item noStyle shouldUpdate={(p, c) => p.image_url !== c.image_url}>
@@ -220,46 +276,50 @@ export default function QuestManager() {
                                 <Form.List name="options">
                                     {(fields, { add, remove }) => (
                                         <>
-                                            {fields.map((field, idx) => (
-                                                <Space
-                                                    key={field.key}
-                                                    align="start"
-                                                    style={{ display: 'flex', width: '100%', gap: 8 }}
-                                                >
+                                            {fields.map(({ key, name, ...restField }, idx) => (
+                                                <div key={key} style={{ display: 'flex', gap: 8, width: '100%' }}>
                                                     <Radio value={idx} style={{ marginTop: 6 }} />
-                                                    <Form.Item
-                                                        {...field}
-                                                        style={{ flex: 1, marginBottom: 8 }}
-                                                        rules={[
-                                                            { required: true, message: 'Заполните вариант' },
-                                                            {
-                                                                validator: (_, val) =>
-                                                                    (val ?? '').trim().length === 0
-                                                                        ? Promise.reject(new Error('Пустые строки не допускаются'))
-                                                                        : Promise.resolve(),
-                                                            },
-                                                        ]}
-                                                    >
-                                                        <TextArea
-                                                            placeholder={`Вариант ${idx + 1}`}
-                                                            autoSize={{ minRows: 1, maxRows: 4 }}
-                                                            showCount
-                                                            maxLength={400}
-                                                            allowClear
-                                                        />
-                                                    </Form.Item>
+
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <Form.Item
+                                                            {...restField}
+                                                            name={name}                // ← ВАЖНО: без 'options' тут
+                                                            rules={[
+                                                                { required: true, message: 'Заполните строку' },
+                                                                { min: 1, message: 'Минимум 1 символ' },
+                                                                { max: 300, message: 'Максимум 300 символов' },
+                                                                ({ getFieldValue }) => ({
+                                                                    validator(_, v) {
+                                                                        return (v ?? '').trim().length === 0
+                                                                            ? Promise.reject(new Error('Пустые строки не допускаются'))
+                                                                            : Promise.resolve();
+                                                                    },
+                                                                }),
+                                                            ]}
+                                                            style={{ marginBottom: 0 }}
+                                                        >
+                                                            <TextArea
+                                                                placeholder={`Вариант ответа ${idx + 1}`}
+                                                                rows={3}
+                                                                showCount
+                                                                maxLength={300}
+                                                                allowClear
+                                                            />
+                                                        </Form.Item>
+                                                    </div>
 
                                                     <Tooltip title={fields.length <= 2 ? 'Минимум 2 варианта' : 'Удалить вариант'}>
                                                         <Button
                                                             danger
                                                             type="text"
                                                             icon={<DeleteOutlined />}
-                                                            onClick={() => remove(field.name)}
+                                                            onClick={() => remove(name)}
                                                             disabled={fields.length <= 2}
                                                         />
                                                     </Tooltip>
-                                                </Space>
+                                                </div>
                                             ))}
+
                                             <Form.Item>
                                                 <Button type="dashed" onClick={() => add('')} icon={<PlusOutlined />}>
                                                     Добавить вариант
@@ -268,6 +328,7 @@ export default function QuestManager() {
                                         </>
                                     )}
                                 </Form.List>
+
                             </Space>
                         </Radio.Group>
                     </Form.Item>
@@ -280,14 +341,14 @@ export default function QuestManager() {
                 </Form>
             </Card>
 
-            <Divider />
-
-            <Card style={shellCardStyle} styles={{ body: { paddingTop: 8 } }}>
+            <Card style={shellCardStyle} bodyStyle={{ paddingTop: 8 }}>
                 <Title level={4} style={{ marginTop: 0 }}>Список вопросов</Title>
+
                 <List
                     loading={loadingList}
                     bordered={false}
                     dataSource={questions}
+                    grid={viewMode === 'cards' ? { gutter: 16, column: 2 } : undefined}
                     locale={{ emptyText: 'Вопросов пока нет' }}
                     renderItem={(item) => {
                         const correctText =
@@ -295,11 +356,62 @@ export default function QuestManager() {
                                 ? item.options[item.correct_answer]
                                 : `#${item.correct_answer}`;
 
+                        const content = (
+                            <>
+                                {item.image_url ? (
+                                    <div style={{ margin: '6px 0' }}>
+                                        <Image src={item.image_url} width={320} alt="question" fallback="" />
+                                    </div>
+                                ) : null}
+
+                                <Typography.Paragraph type="secondary" style={{ marginBottom: 6 }}>
+                                    Варианты:
+                                </Typography.Paragraph>
+                                <ol style={{ marginTop: 0 }}>
+                                    {(item.options || []).map((opt, i) => (
+                                        <li key={i}>{opt}</li>
+                                    ))}
+                                </ol>
+
+                                <Typography.Text>
+                                    Правильный ответ: <Typography.Text code>{correctText}</Typography.Text>
+                                </Typography.Text>
+                            </>
+                        );
+
+                        if (viewMode === 'cards') {
+                            return (
+                                <List.Item>
+                                    <Card
+                                        hoverable
+                                        style={{ borderRadius: 14 }}
+                                        actions={[
+                                            <Popconfirm
+                                                key="del"
+                                                title="Удалить вопрос?"
+                                                okText="Да"
+                                                cancelText="Нет"
+                                                onConfirm={() => deleteQuestion(item.id)}
+                                            >
+                                                <Button danger type="link" icon={<DeleteOutlined />}>
+                                                    Удалить
+                                                </Button>
+                                            </Popconfirm>,
+                                        ]}
+                                    >
+                                        <Title level={5} style={{ marginTop: 0 }}>{`${item.id}. ${item.question}`}</Title>
+                                        {content}
+                                    </Card>
+                                </List.Item>
+                            );
+                        }
+
                         return (
                             <List.Item
                                 style={{ paddingLeft: 0, paddingRight: 0 }}
                                 actions={[
                                     <Popconfirm
+                                        key="del"
                                         title="Удалить вопрос?"
                                         okText="Да"
                                         cancelText="Нет"
@@ -311,26 +423,7 @@ export default function QuestManager() {
                             >
                                 <List.Item.Meta
                                     title={<Typography.Text strong>{`${item.id}. ${item.question}`}</Typography.Text>}
-                                    description={
-                                        <div>
-                                            {item.image_url ? (
-                                                <div style={{ margin: '6px 0' }}>
-                                                    <Image src={item.image_url} width={320} alt="question" fallback="" />
-                                                </div>
-                                            ) : null}
-
-                                            <Typography.Text type="secondary">Варианты:</Typography.Text>
-                                            <ol style={{ marginTop: 4 }}>
-                                                {(item.options || []).map((opt, i) => (
-                                                    <li key={i}>{opt}</li>
-                                                ))}
-                                            </ol>
-
-                                            <Typography.Text>
-                                                Правильный ответ: <Typography.Text code>{correctText}</Typography.Text>
-                                            </Typography.Text>
-                                        </div>
-                                    }
+                                    description={content}
                                 />
                             </List.Item>
                         );
@@ -340,8 +433,9 @@ export default function QuestManager() {
         </>
     );
 
+    /* ======= Вкладка: Пройти ======= */
     const QuizTab = (
-        <Card style={shellCardStyle} styles={{ body: { paddingTop: 8 } }}>
+        <Card style={shellCardStyle} bodyStyle={{ paddingTop: 8 }}>
             {questions.length === 0 ? (
                 <Text type="secondary">Нет вопросов для прохождения.</Text>
             ) : (
@@ -377,20 +471,16 @@ export default function QuestManager() {
                             {(currentQuestion?.options || []).map((opt, idx) => {
                                 const isCorrect = idx === currentQuestion?.correct_answer;
                                 const isChosen = quizChoice === idx;
-
-                                // Подсветка: показываем только выбранный вариант.
-                                // Правильный показываем лишь по кнопке "Показать правильный".
                                 const borderColor =
                                     quizChecked && isChosen
                                         ? (isCorrect ? '#52c41a' : '#ff4d4f')
-                                        : (revealCorrect && isCorrect ? '#52c41a' : undefined);
+                                        : undefined;
 
                                 return (
                                     <Card key={idx} size="small" style={optionCard(borderColor)}>
                                         <Space>
                                             <Radio value={idx} />
                                             <Text>{opt}</Text>
-
                                             {quizChecked && isChosen && isCorrect && (
                                                 <CheckCircleTwoTone twoToneColor="#52c41a" />
                                             )}
@@ -420,7 +510,6 @@ export default function QuestManager() {
                                 setQuizIndex(0);
                                 setQuizChoice(null);
                                 setQuizChecked(false);
-                                setRevealCorrect(false);
                                 setScore(0);
                             }}
                         >
@@ -432,26 +521,19 @@ export default function QuestManager() {
         </Card>
     );
 
+
     const tabItems = [
-        {
-            key: 'manage',
-            label: 'Управление',
-            children: ManageTab,
-        },
-        {
-            key: 'quiz',
-            label: 'Пройти',
-            children: QuizTab,
-        },
+        { key: 'manage', label: 'Управление', children: ManageTab },
+        { key: 'quiz', label: 'Пройти', children: QuizTab },
     ];
 
     return (
-        <div style={{ maxWidth: 1024, margin: '0 auto', padding: 12 }}>
+        <div style={{ maxWidth: 1040, margin: '0 auto', padding: 12 }}>
             <div style={headerStyle}>
                 <Row align="middle" gutter={[12, 12]}>
                     <Col flex="auto">
                         <Title level={3} style={{ margin: 0 }}>Вопросы и тесты</Title>
-                        <Text type="secondary">Создавайте вопросы, а затем проходите тест во второй вкладке</Text>
+                        <Text type="secondary">Создавайте вопросы и проходите тест — удобно и без дёрганий</Text>
                     </Col>
                     <Col>
                         <Badge

@@ -1,46 +1,44 @@
-import React from 'react';
-import {Menu, Layout} from 'antd';
+import React, { useMemo } from 'react';
+import { Layout, Menu } from 'antd';
 import {
     UnorderedListOutlined,
     PlusOutlined,
     CheckCircleOutlined,
     UserOutlined,
-    QuestionCircleOutlined
+    QuestionCircleOutlined,
 } from '@ant-design/icons';
 
-const {Sider} = Layout;
+const { Sider } = Layout;
 
-export default function Sidebar({
-                                    activeTab,
-                                    setActiveTab,
-                                    setEditingTask,
-                                    form
-                                }) {
+export default function Sidebar({ activeTab, setActiveTab, setEditingTask, form }) {
+    // Чтобы не создавать массив на каждый рендер — мемоизируем
+    const items = useMemo(
+        () => [
+            { key: 'list',      icon: <UnorderedListOutlined />,   label: 'Задачи' },
+            { key: 'create',    icon: <PlusOutlined />,            label: 'Создание задачи' },
+            { key: 'completed', icon: <CheckCircleOutlined />,     label: 'Архив' },
+            { key: 'disk',      icon: <UserOutlined />,            label: 'Яндекс.Диск' },
+            { key: 'quest',     icon: <QuestionCircleOutlined />,  label: 'Вопросы' },
+        ],
+        []
+    );
+
     return (
-        <Sider width={200} style={{background: '#fff'}}>
+        <Sider width={200} style={{ background: '#fff' }}>
             <Menu
                 mode="inline"
                 selectedKeys={[activeTab]}
+                items={items}
                 onClick={(e) => {
-                    setActiveTab(e.key);
-                    if (e.key === 'list') {
+                    const key = e.key; // string
+                    setActiveTab(key);
+                    if (key === 'list') {
                         setEditingTask(null);
-                        form.resetFields();
+                        form?.resetFields?.();
                     }
                 }}
-                style={{height: '100%', borderRight: 0}}
-            >
-                <Menu.Item key="list" icon={<UnorderedListOutlined/>}>
-                    Задачи
-                </Menu.Item>
-                <Menu.Item key="create" icon={<PlusOutlined/>}>
-                    Создание задачи
-                </Menu.Item>
-                <Menu.Item key="completed" icon={<CheckCircleOutlined/>}>Архив</Menu.Item>
-                <Menu.Item key="disk" icon={<UserOutlined/>}>Яндекс.Диск</Menu.Item>
-
-                <Menu.Item key="quest" icon={<QuestionCircleOutlined />}>Вопросы</Menu.Item>
-            </Menu>
+                style={{ height: '100%', borderRight: 0 }}
+            />
         </Sider>
     );
 }
