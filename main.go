@@ -34,7 +34,8 @@ func main() {
 	app.Get("/api/disk/download", yandex.DownloadDiskFile)
 
 	app.Post("/api/quest", handlers.CreateQuest)
-	app.Get("/api/quest", handlers.GetQuest)
+	app.Get("/api/quest", handlers.GetQuests)
+	app.Get("/api/quest/:id", handlers.GetQuest)
 	app.Delete("/api/quest/:id", handlers.DeleteQuest)
 	app.Put("/api/quest/:id", handlers.UpdateQuest)
 

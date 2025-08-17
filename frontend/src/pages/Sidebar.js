@@ -1,7 +1,11 @@
 import React from 'react';
 import {Menu, Layout} from 'antd';
 import {
-    UnorderedListOutlined, PlusOutlined, CheckCircleOutlined, UserOutlined
+    UnorderedListOutlined,
+    PlusOutlined,
+    CheckCircleOutlined,
+    UserOutlined,
+    QuestionCircleOutlined
 } from '@ant-design/icons';
 
 const {Sider} = Layout;
@@ -33,7 +37,9 @@ export default function Sidebar({
                     Создание задачи
                 </Menu.Item>
                 <Menu.Item key="completed" icon={<CheckCircleOutlined/>}>Архив</Menu.Item>
-                <Menu.Item key="disk" icon={<UserOutlined />}>Яндекс.Диск</Menu.Item>
+                <Menu.Item key="disk" icon={<UserOutlined/>}>Яндекс.Диск</Menu.Item>
+
+                <Menu.Item key="quest" icon={<QuestionCircleOutlined />}>Вопросы</Menu.Item>
             </Menu>
         </Sider>
     );
